@@ -1,277 +1,508 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Image to DVC Village Converter</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      display: flex;
-      flex-direction: row;
-      gap: 20px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Image to DVC Village Converter</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+      }
 
-    .main-content {
-      flex: 1;
-    }
+      .main-content {
+        flex: 1;
+      }
 
-    .sidebar {
-      width: 300px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+      .sidebar {
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
 
-    #inputPreview {
-		max-width: 300px;
-		max-height: 300px;
-		width: auto;
-		height: auto;
-		object-fit: contain;
-		display: block;
-		margin: 0 auto;
-		border: 1px solid #000;
-	}
+      #inputPreview {
+        max-width: 300px;
+        max-height: 300px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid #000;
+      }
 
-    .tiles-sidebar {
-      border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: #f9f9f9;
-    }
+      .tiles-sidebar {
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+      }
 
-    input[type="file"] {
-      margin: 20px 0;
-    }
+      input[type="file"] {
+        margin: 20px 0;
+      }
 
-    canvas {
-      border: 1px solid #000;
-      image-rendering: pixelated;
-    }
+      canvas {
+        border: 1px solid #000;
+        image-rendering: pixelated;
+      }
 
-    .scaled {
-      width: 25%;
-      height: auto;
-    }
+      .scaled {
+        width: 25%;
+        height: auto;
+      }
 
-    .slider-container {
-      margin: 20px 0;
-    }
+      .slider-container {
+        margin: 20px 0;
+      }
 
-    .slider-label {
-      display: block;
-      margin-bottom: 10px;
-    }
+      .slider-label {
+        display: block;
+        margin-bottom: 10px;
+      }
 
-    #tilesUsedBox {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-top: 10px;
-    }
+      #tilesUsedBox {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
 
-    #tilesUsedBox img {
-      width: 50px;
-      height: 50px;
-      border: 1px solid #ccc;
-    }
-  </style>
-</head>
-<body>
+      .tile-wrapper {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        transition: background-color 0.2s ease, filter 0.3s ease;
+      }
 
-  <div class="main-content">
-    <h1>Image to DVC Village Converter</h1>
-    <h4>Please use images close in resolution to desired size for best results.</h4>
-    <input type="file" id="fileInput" accept="image/*" />
+      .tile-wrapper:hover {
+        background-color: rgba(255, 255, 0, 0.3);
+        filter: brightness(1.2);
+      }
 
-    <div style="margin: 10px 0;">
-      <button id="toggleScaleBtn">Show Full Size</button>
+      .tile-wrapper.selected {
+        background-color: rgba(255, 255, 0, 0.6);
+      }
+
+      .tile-wrapper img {
+        width: 70%;
+        height: 70%;
+        object-fit: contain;
+      }
+
+      #resolutionSlider {
+        width: 300px;
+        -webkit-appearance: none;
+        height: 10px;
+        background: transparent;
+        position: relative;
+      }
+
+      #resolutionSlider::-webkit-slider-runnable-track {
+        height: 10px;
+        background: linear-gradient(to right,
+          #bbb 0%, #999 12.5%, #888 25%, #777 37.5%, 
+          #666 50%, #555 62.5%, #444 75%, #333 87.5%, #111 100%);
+        border-radius: 5px;
+      }
+
+      #resolutionSlider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #000;
+        cursor: pointer;
+        margin-top: -5px;
+        position: relative;
+        z-index: 2;
+      }
+
+      #resolutionSlider::-moz-range-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #000;
+        cursor: pointer;
+      }
+
+      #resolutionSlider::-moz-range-track {
+        height: 10px;
+        background: linear-gradient(to right,
+          #bbb 0%, #999 12.5%, #888 25%, #777 37.5%, 
+          #666 50%, #555 62.5%, #444 75%, #333 87.5%, #111 100%);
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="main-content">
+      <h1>Image to DVC Village Converter</h1>
+      <h4>Please use images close in resolution to desired size for best results.</h4>
+	  <p style="color: red; font-weight: bold;">DISCLAIMER: Please avoid setting the resolution to match with extremely large images as the tiles are 29x29!!! Images around 400x400 should be okay, just a bit laggy.</p>
+      <input type="file" id="fileInput" accept="image/*" />
+
+      <div style="margin: 10px 0;">
+        <button id="toggleScaleBtn">Show Full Size</button>
+      </div>
+
+      <div class="slider-container">
+        <label for="resolutionSlider" class="slider-label">
+          Output Resolution:
+          <span id="resolutionValue">80</span>x<span id="resolutionValueY">80</span>
+        </label>
+        <input type="range" id="resolutionSlider" min="0" max="8" step="1" value="7">
+      </div>
+
+      <div class="slider-container">
+        <label>
+          <input type="checkbox" id="ditheringToggle" checked />
+          Enable Dithering
+        </label>
+      </div>
+
+      <canvas id="canvas" class="scaled"></canvas>
     </div>
 
-    <div class="slider-container">
-      <label for="resolutionSlider" class="slider-label">Output Resolution:
-        <span id="resolutionValue">80</span>x<span id="resolutionValueY">80</span>
-      </label>
-      <input type="range" id="resolutionSlider" min="0" max="8" step="1">
+    <div class="sidebar">
+      <img id="inputPreview" />
+      <div class="tiles-sidebar">
+        <h3>Tiles Used:</h3>
+		<h5>Click on tiles to see where they're used.</h5>
+        <div id="tilesUsedBox"></div>
+      </div>
     </div>
 
-    <canvas id="canvas" class="scaled"></canvas>
-  </div>
+    <script>
+  const PRESET_COLORS = [
+    [140, 27, 33], [254, 4, 93], [233, 69, 129], [230, 106, 114],
+    [241, 175, 179], [203, 66, 33], [242, 88, 52], [250, 135, 51],
+    [252, 168, 80], [242, 242, 242], [232, 178, 44], [254, 207, 91],
+    [254, 207, 115], [254, 238, 204], [221, 239, 251], [104, 146, 122],
+    [150, 170, 117], [101, 206, 120], [165, 223, 72], [182, 181, 195],
+    [64, 223, 255], [167, 198, 255], [143, 228, 209], [185, 241, 254],
+    [204, 204, 204], [129, 89, 201], [163, 165, 224], [214, 132, 242],
+    [229, 196, 239], [170, 170, 170], [96, 73, 57], [177, 119, 105],
+    [164, 132, 111], [231, 214, 206], [186, 185, 190], [63, 96, 127],
+    [91, 120, 150], [156, 178, 199], [206, 222, 237], [171, 160, 154],
+    [64, 64, 64], [95, 100, 119], [121, 133, 149], [179, 187, 198],
+    [136, 136, 136], [94, 94, 94], [119, 119, 119], [200, 211, 231],
+    [212, 223, 241], [51, 55, 100], [64, 68, 113], [183, 126, 49],
+    [58, 155, 162], [250, 241, 212], [60, 88, 92], [94, 96, 109],
+    [254, 252, 211], [251, 177, 178], [154, 117, 230], [251, 182, 123],
+    [112, 85, 76], [255, 255, 255]
+  ];
 
-  <div class="sidebar">
-    <img id="inputPreview" />
-    
-    <div class="tiles-sidebar">
-      <h3>Tiles Used:</h3>
-      <div id="tilesUsedBox"></div>
-    </div>
-  </div>
+  const TILE_SIZE = 29;
+  const tileImages = [];
+  let originalImage = null;
+  let originalWidth = 0;
+  let originalHeight = 0;
+  let resolutionOptions = [15, 20, 30, 40, 50, 60, 70, 80, 'original'];
+  let selectedResolution = 80;
+  let enableDithering = true;
+  let selectedTiles = new Set();
+  let isHighlightVisible = true;
 
-  <script>
-    const PRESET_COLORS = [
-      [140, 27, 33], [254, 4, 93], [233, 69, 129], [230, 106, 114],
-      [241, 175, 179], [203, 66, 33], [242, 88, 52], [250, 135, 51],
-      [252, 168, 80], [242, 242, 242], [232, 178, 44], [254, 207, 91],
-      [254, 207, 115], [254, 238, 204], [221, 239, 251], [104, 146, 122],
-      [150, 170, 117], [101, 206, 120], [165, 223, 72], [182, 181, 195],
-      [64, 223, 255], [167, 198, 255], [143, 228, 209], [185, 241, 254],
-      [204, 204, 204], [129, 89, 201], [163, 165, 224], [214, 132, 242],
-      [229, 196, 239], [170, 170, 170], [96, 73, 57], [177, 119, 105],
-      [164, 132, 111], [231, 214, 206], [186, 185, 190], [63, 96, 127],
-      [91, 120, 150], [156, 178, 199], [206, 222, 237], [171, 160, 154],
-      [64, 64, 64], [95, 100, 119], [121, 133, 149], [179, 187, 198],
-      [136, 136, 136], [94, 94, 94], [119, 119, 119], [200, 211, 231],
-      [212, 223, 241], [51, 55, 100], [64, 68, 113], [183, 126, 49],
-      [58, 155, 162], [250, 241, 212], [60, 88, 92], [94, 96, 109],
-      [254, 252, 211], [251, 177, 178], [154, 117, 230], [251, 182, 123],
-      [112, 85, 76], [255, 255, 255]
-    ];
+  let highlightInterval = setInterval(() => {
+    isHighlightVisible = !isHighlightVisible;
+    redrawCanvasOnly();
+  }, 700);
 
-    const TILE_SIZE = 29;
-    const tileImages = [];
-    let originalImage = null;
-    let resolutionOptions = [15, 20, 30, 40, 50, 60, 70, 80, 'original'];
-    let selectedResolution = 80;
+  function preloadTiles(callback) {
+    let loaded = 0;
+    for (let i = 0; i < 62; i++) {
+      const img = new Image();
+      img.src = `tile_${i}.png`;
+      img.onload = () => {
+        tileImages[i] = img;
+        loaded++;
+        if (loaded === 62) callback();
+      };
+    }
+  }
 
-    function preloadTiles(callback) {
-      let loaded = 0;
-      for (let i = 0; i < 62; i++) {
-        const img = new Image();
-        img.src = `tile_${i}.png`;
-        img.onload = () => {
-          tileImages[i] = img;
-          loaded++;
-          if (loaded === 62) callback();
-        };
-        img.onerror = () => console.error(`Failed to load tile_${i}.png`);
+  function getColorIndex(rgb) {
+    let minDistance = Infinity;
+    let closestIndex = 0;
+
+    for (let i = 0; i < PRESET_COLORS.length; i++) {
+      let color = PRESET_COLORS[i];
+      let dist = (rgb[0] - color[0]) ** 2 +
+                 (rgb[1] - color[1]) ** 2 +
+                 (rgb[2] - color[2]) ** 2;
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
       }
     }
 
-    function getColorIndex(rgb) {
-      let minDistance = Infinity;
-      let closestIndex = 0;
-      for (let i = 0; i < PRESET_COLORS.length; i++) {
-        let color = PRESET_COLORS[i];
-        let dist = (rgb[0] - color[0]) ** 2 +
-                   (rgb[1] - color[1]) ** 2 +
-                   (rgb[2] - color[2]) ** 2;
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestIndex = i;
+    return closestIndex;
+  }
+
+  function applyFloydSteinbergDithering(imageData, width, height) {
+    const data = imageData.data;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        const oldColor = [data[i], data[i + 1], data[i + 2]];
+        const newColor = PRESET_COLORS[getColorIndex(oldColor)];
+        const error = [
+          oldColor[0] - newColor[0],
+          oldColor[1] - newColor[1],
+          oldColor[2] - newColor[2]
+        ];
+
+        data[i] = newColor[0];
+        data[i + 1] = newColor[1];
+        data[i + 2] = newColor[2];
+
+        if (x + 1 < width) {
+          const j = (y * width + x + 1) * 4;
+          data[j] += error[0] * 7 / 16;
+          data[j + 1] += error[1] * 7 / 16;
+          data[j + 2] += error[2] * 7 / 16;
+        }
+
+        if (x - 1 >= 0 && y + 1 < height) {
+          const j = ((y + 1) * width + x - 1) * 4;
+          data[j] += error[0] * 3 / 16;
+          data[j + 1] += error[1] * 3 / 16;
+          data[j + 2] += error[2] * 3 / 16;
+        }
+
+        if (y + 1 < height) {
+          const j = ((y + 1) * width + x) * 4;
+          data[j] += error[0] * 5 / 16;
+          data[j + 1] += error[1] * 5 / 16;
+          data[j + 2] += error[2] * 5 / 16;
+        }
+
+        if (x + 1 < width && y + 1 < height) {
+          const j = ((y + 1) * width + x + 1) * 4;
+          data[j] += error[0] * 1 / 16;
+          data[j + 1] += error[1] * 1 / 16;
+          data[j + 2] += error[2] * 1 / 16;
         }
       }
-      return closestIndex;
+    }
+  }
+
+  function drawWithTiles(imageData, ctx, width, height) {
+    const tilesUsedBox = document.getElementById("tilesUsedBox");
+    const usedTilesSet = new Set();
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
+        const tileIndex = getColorIndex([r, g, b]);
+        const tile = tileImages[tileIndex];
+
+        ctx.drawImage(tile, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+        if (selectedTiles.has(tileIndex) && isHighlightVisible) {
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+          ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+
+        usedTilesSet.add(tileIndex);
+      }
     }
 
-    function drawWithTiles(imageData, ctx, width, height) {
-      const tilesUsedBox = document.getElementById("tilesUsedBox");
-      const usedTilesSet = new Set();
+    tilesUsedBox.innerHTML = "";
+    Array.from(usedTilesSet).sort((a, b) => a - b).forEach(index => {
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("tile-wrapper");
+      if (selectedTiles.has(index)) wrapper.classList.add("selected");
 
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          const i = (y * width + x) * 4;
-          const r = imageData.data[i];
-          const g = imageData.data[i + 1];
-          const b = imageData.data[i + 2];
+      const bigImg = new Image();
+      bigImg.src = `tileBig_${index}.png`;
+      bigImg.alt = `tileBig_${index}`;
+      bigImg.draggable = false;
 
-          const tileIndex = getColorIndex([r, g, b]);
-          const tile = tileImages[tileIndex];
-          ctx.drawImage(tile, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      wrapper.appendChild(bigImg);
 
-          usedTilesSet.add(tileIndex);
+      wrapper.addEventListener("click", () => {
+        const isAlreadySelected = selectedTiles.has(index);
+
+        selectedTiles.clear();
+        document.querySelectorAll(".tile-wrapper").forEach(w => w.classList.remove("selected"));
+
+        if (!isAlreadySelected) {
+          selectedTiles.add(index);
+          wrapper.classList.add("selected");
+        }
+
+        resizeAndDrawImage();
+      });
+
+      tilesUsedBox.appendChild(wrapper);
+    });
+  }
+
+  function resizeAndDrawImage() {
+    if (!originalImage) return;
+
+    const TARGET_WIDTH = selectedResolution === 'original' ? originalWidth : selectedResolution;
+    const TARGET_HEIGHT = selectedResolution === 'original' ? originalHeight : selectedResolution;
+
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = TARGET_WIDTH;
+    tempCanvas.height = TARGET_HEIGHT;
+    const tempCtx = tempCanvas.getContext("2d");
+
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = "high";
+    tempCtx.drawImage(originalImage, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+    let imageData = tempCtx.getImageData(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+    if (enableDithering) {
+      applyFloydSteinbergDithering(imageData, TARGET_WIDTH, TARGET_HEIGHT);
+    } else {
+      for (let y = 0; y < TARGET_HEIGHT; y++) {
+        for (let x = 0; x < TARGET_WIDTH; x++) {
+          const i = (y * TARGET_WIDTH + x) * 4;
+          const tileIndex = getColorIndex([
+            imageData.data[i],
+            imageData.data[i + 1],
+            imageData.data[i + 2]
+          ]);
+          imageData.data[i] = PRESET_COLORS[tileIndex][0];
+          imageData.data[i + 1] = PRESET_COLORS[tileIndex][1];
+          imageData.data[i + 2] = PRESET_COLORS[tileIndex][2];
         }
       }
-
-      tilesUsedBox.innerHTML = "";
-      Array.from(usedTilesSet).sort((a, b) => a - b).forEach(index => {
-        const bigImg = new Image();
-        bigImg.src = `tileBig_${index}.png`;
-        bigImg.alt = `tileBig_${index}`;
-        tilesUsedBox.appendChild(bigImg);
-      });
-    }
-
-    function resizeAndDrawImage() {
-      if (!originalImage) return;
-
-      const TARGET_WIDTH = selectedResolution === 'original' ? originalImage.width : selectedResolution;
-      const TARGET_HEIGHT = selectedResolution === 'original' ? originalImage.height : selectedResolution;
-
-      let srcCanvas = document.createElement("canvas");
-      let srcCtx = srcCanvas.getContext("2d");
-      srcCanvas.width = originalImage.width;
-      srcCanvas.height = originalImage.height;
-      srcCtx.drawImage(originalImage, 0, 0);
-
-      let currentCanvas = srcCanvas;
-      while (currentCanvas.width > TARGET_WIDTH * 2 || currentCanvas.height > TARGET_HEIGHT * 2) {
-        let nextWidth = Math.max(TARGET_WIDTH, Math.floor(currentCanvas.width / 2));
-        let nextHeight = Math.max(TARGET_HEIGHT, Math.floor(currentCanvas.height / 2));
-        let tmpCanvas = document.createElement("canvas");
-        tmpCanvas.width = nextWidth;
-        tmpCanvas.height = nextHeight;
-        let tmpCtx = tmpCanvas.getContext("2d");
-        tmpCtx.imageSmoothingEnabled = true;
-        tmpCtx.imageSmoothingQuality = "high";
-        tmpCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, nextWidth, nextHeight);
-        currentCanvas = tmpCanvas;
-      }
-
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = TARGET_WIDTH;
-      tempCanvas.height = TARGET_HEIGHT;
-      const tempCtx = tempCanvas.getContext("2d");
-      tempCtx.imageSmoothingEnabled = true;
-      tempCtx.imageSmoothingQuality = "high";
-      tempCtx.drawImage(currentCanvas, 0, 0, currentCanvas.width, currentCanvas.height, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-
-      const resizedImageData = tempCtx.getImageData(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-
-      const canvas = document.getElementById("canvas");
-      canvas.width = TARGET_WIDTH * TILE_SIZE;
-      canvas.height = TARGET_HEIGHT * TILE_SIZE;
-      const ctx = canvas.getContext("2d");
-
-      preloadTiles(() => {
-        drawWithTiles(resizedImageData, ctx, TARGET_WIDTH, TARGET_HEIGHT);
-      });
     }
 
     const canvas = document.getElementById("canvas");
-    const inputPreview = document.getElementById("inputPreview");
-    const toggleBtn = document.getElementById("toggleScaleBtn");
+    const ctx = canvas.getContext("2d");
+    canvas.width = TARGET_WIDTH * TILE_SIZE;
+    canvas.height = TARGET_HEIGHT * TILE_SIZE;
 
-    toggleBtn.addEventListener("click", () => {
-      canvas.classList.toggle("scaled");
-      toggleBtn.textContent = canvas.classList.contains("scaled") ? "Show Full Size" : "Show Scaled";
-    });
+    drawWithTiles(imageData, ctx, TARGET_WIDTH, TARGET_HEIGHT);
+  }
 
-    document.getElementById("fileInput").addEventListener("change", function (event) {
-      const file = event.target.files[0];
-      if (!file) return;
+  function redrawCanvasOnly() {
+    if (!originalImage) return;
 
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = new Image();
-        img.onload = function () {
-          originalImage = img;
-          inputPreview.src = img.src;
-          resizeAndDrawImage();
-        };
-        img.src = e.target.result;
+    const TARGET_WIDTH = selectedResolution === 'original' ? originalWidth : selectedResolution;
+    const TARGET_HEIGHT = selectedResolution === 'original' ? originalHeight : selectedResolution;
+
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = TARGET_WIDTH;
+    tempCanvas.height = TARGET_HEIGHT;
+    const tempCtx = tempCanvas.getContext("2d");
+
+    tempCtx.imageSmoothingEnabled = true;
+    tempCtx.imageSmoothingQuality = "high";
+    tempCtx.drawImage(originalImage, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+    let imageData = tempCtx.getImageData(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+    if (enableDithering) {
+      applyFloydSteinbergDithering(imageData, TARGET_WIDTH, TARGET_HEIGHT);
+    } else {
+      for (let y = 0; y < TARGET_HEIGHT; y++) {
+        for (let x = 0; x < TARGET_WIDTH; x++) {
+          const i = (y * TARGET_WIDTH + x) * 4;
+          const tileIndex = getColorIndex([
+            imageData.data[i],
+            imageData.data[i + 1],
+            imageData.data[i + 2]
+          ]);
+          imageData.data[i] = PRESET_COLORS[tileIndex][0];
+          imageData.data[i + 1] = PRESET_COLORS[tileIndex][1];
+          imageData.data[i + 2] = PRESET_COLORS[tileIndex][2];
+        }
+      }
+    }
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = TARGET_WIDTH * TILE_SIZE;
+    canvas.height = TARGET_HEIGHT * TILE_SIZE;
+
+    for (let y = 0; y < TARGET_HEIGHT; y++) {
+      for (let x = 0; x < TARGET_WIDTH; x++) {
+        const i = (y * TARGET_WIDTH + x) * 4;
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
+        const tileIndex = getColorIndex([r, g, b]);
+        const tile = tileImages[tileIndex];
+
+        ctx.drawImage(tile, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+        if (selectedTiles.has(tileIndex) && isHighlightVisible) {
+          ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+          ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
+  }
+
+  document.getElementById("toggleScaleBtn").addEventListener("click", function () {
+    const canvas = document.getElementById("canvas");
+    canvas.classList.toggle("scaled");
+    this.textContent = canvas.classList.contains("scaled")
+      ? "Show Full Size"
+      : "Show Scaled";
+  });
+
+  document.getElementById("resolutionSlider").addEventListener("input", function () {
+    selectedResolution = resolutionOptions[this.value];
+
+    if (selectedResolution === 'original') {
+      document.getElementById("resolutionValue").textContent = originalWidth || '?';
+      document.getElementById("resolutionValueY").textContent = originalHeight || '?';
+    } else {
+      document.getElementById("resolutionValue").textContent = selectedResolution;
+      document.getElementById("resolutionValueY").textContent = selectedResolution;
+    }
+
+    resizeAndDrawImage();
+  });
+
+  document.getElementById("ditheringToggle").addEventListener("change", function () {
+    enableDithering = this.checked;
+    resizeAndDrawImage();
+  });
+
+  document.getElementById("fileInput").addEventListener("change", function (event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        originalImage = img;
+        originalWidth = img.width;
+        originalHeight = img.height;
+        document.getElementById("inputPreview").src = e.target.result;
+        resizeAndDrawImage();
       };
-      reader.readAsDataURL(file);
-    });
+      img.src = e.target.result;
+    };
 
-    document.getElementById("resolutionSlider").addEventListener("input", function (e) {
-      const value = parseInt(e.target.value);
-      selectedResolution = resolutionOptions[value];
-      document.getElementById("resolutionValue").textContent = selectedResolution === 'original' ? originalImage?.width ?? 'original' : selectedResolution;
-      document.getElementById("resolutionValueY").textContent = selectedResolution === 'original' ? originalImage?.height ?? 'original' : selectedResolution;
-      resizeAndDrawImage();
-    });
-  </script>
-</body>
+    reader.readAsDataURL(file);
+  });
+
+  preloadTiles(() => console.log("Tiles preloaded successfully"));
+</script>
+
+  </body>
 </html>
