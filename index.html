@@ -9,12 +9,16 @@
         font-family: Arial, sans-serif;
         padding: 20px;
         display: flex;
-        flex-direction: row;
-        gap: 20px;
+        flex-direction: column;
+        background-image: url('background.png');
+        background-repeat: repeat;
+        background-size: auto;
+		display: block;
       }
 
       .main-content {
-        flex: 1;
+        display: block;
+        gap: 20px;
       }
 
       .sidebar {
@@ -24,18 +28,18 @@
         gap: 20px;
       }
 
-      #inputPreview {
-        max-width: 300px;
-        max-height: 300px;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-        display: block;
-        margin: 0 auto;
-        border: 1px solid #000;
+      .main-sidebar {
+        width: 1450px;
+        flex-shrink: 0;
+		flex-direction: column
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #f9f9f9;
       }
 
       .tiles-sidebar {
+        flex-shrink: 0;
         border: 1px solid #ccc;
         padding: 10px;
         border-radius: 8px;
@@ -47,13 +51,17 @@
       }
 
       canvas {
-        border: 1px solid #000;
-        image-rendering: pixelated;
-      }
+		border: 1px solid #000;
+		display: block;
+		image-rendering: pixelated;
+		margin-top: 20px; 
+		margin-left: 0;
+		width: 100%; 
+		}
 
       .scaled {
         width: 25%;
-        height: auto;
+        height: 25%;
       }
 
       .slider-container {
@@ -141,46 +149,61 @@
           #666 50%, #555 62.5%, #444 75%, #333 87.5%, #111 100%);
         border-radius: 5px;
       }
+	  
+	  #inputPreview {
+        max-width: 250px;
+        max-height: 250px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid #000;
+      }
     </style>
   </head>
 
   <body>
     <div class="main-content">
-      <h1>Image to DVC Village Converter</h1>
-      <h4>Please use images close in resolution to desired size for best results.</h4>
-	  <p style="color: red; font-weight: bold;">DISCLAIMER: Please avoid setting the resolution to match with extremely large images as the tiles are 29x29!!! Images around 400x400 should be okay, just a bit laggy.</p>
-      <input type="file" id="fileInput" accept="image/*" />
+      <div class="main-sidebar">
+        <h1>Image to DVC Village Converter</h1>
+        <h4>Please use images close in resolution to desired size for best results.</h4>
+        <p style="color: red; font-weight: bold;">DISCLAIMER: Please avoid setting the resolution to match with extremely large images as the tiles are 29x29!!! Images around 400x400 should be okay, just a bit laggy.</p>
+        <input type="file" id="fileInput" accept="image/*" />
 
-      <div style="margin: 10px 0;">
-        <button id="toggleScaleBtn">Show Full Size</button>
+        <div style="margin: 10px 0;">
+          <button id="toggleScaleBtn">Show Full Size</button>
+        </div>
+
+        <div class="slider-container">
+          <label for="resolutionSlider" class="slider-label">
+            Output Resolution:
+            <span id="resolutionValue">80</span>x<span id="resolutionValueY">80</span>
+          </label>
+          <input type="range" id="resolutionSlider" min="0" max="8" step="1" value="7">
+        </div>
+
+        <div class="slider-container">
+          <label>
+            <input type="checkbox" id="ditheringToggle" checked />
+            Enable Dithering
+          </label>
+        </div>
+		
+		<div class="tiles-sidebar">
+          <h3>Source Image:</h3>
+          <img id="inputPreview" />
+        </div>
+
+        <div class="tiles-sidebar">
+          <h3>Tiles Used:</h3>
+          <h5>Click on tiles to see where they're used.</h5>
+          <div id="tilesUsedBox"></div>
+        </div>
       </div>
 
-      <div class="slider-container">
-        <label for="resolutionSlider" class="slider-label">
-          Output Resolution:
-          <span id="resolutionValue">80</span>x<span id="resolutionValueY">80</span>
-        </label>
-        <input type="range" id="resolutionSlider" min="0" max="8" step="1" value="7">
-      </div>
-
-      <div class="slider-container">
-        <label>
-          <input type="checkbox" id="ditheringToggle" checked />
-          Enable Dithering
-        </label>
-      </div>
-
-      <canvas id="canvas" class="scaled"></canvas>
-    </div>
-
-    <div class="sidebar">
-      <img id="inputPreview" />
-      <div class="tiles-sidebar">
-        <h3>Tiles Used:</h3>
-		<h5>Click on tiles to see where they're used.</h5>
-        <div id="tilesUsedBox"></div>
-      </div>
-    </div>
+    <!-- Canvas moved here below the main-content -->
+    <canvas id="canvas" class="scaled"></canvas>
 
     <script>
   const PRESET_COLORS = [
@@ -213,10 +236,7 @@
   let selectedTiles = new Set();
   let isHighlightVisible = true;
 
-  let highlightInterval = setInterval(() => {
-    isHighlightVisible = !isHighlightVisible;
-    redrawCanvasOnly();
-  }, 700);
+  let highlightInterval = null;
 
   function preloadTiles(callback) {
     let loaded = 0;
@@ -336,18 +356,23 @@
       wrapper.appendChild(bigImg);
 
       wrapper.addEventListener("click", () => {
-        const isAlreadySelected = selectedTiles.has(index);
+  const isAlreadySelected = selectedTiles.has(index);
 
-        selectedTiles.clear();
-        document.querySelectorAll(".tile-wrapper").forEach(w => w.classList.remove("selected"));
+  selectedTiles.clear();
+  document.querySelectorAll(".tile-wrapper").forEach(w => w.classList.remove("selected"));
 
-        if (!isAlreadySelected) {
-          selectedTiles.add(index);
-          wrapper.classList.add("selected");
-        }
+  if (!isAlreadySelected) {
+    selectedTiles.add(index);
+    wrapper.classList.add("selected");
+    startHighlightTimer(); 
+  } else {
+    clearInterval(highlightInterval); 
+    highlightInterval = null;
+    isHighlightVisible = true;
+  }
 
-        resizeAndDrawImage();
-      });
+  resizeAndDrawImage();
+});
 
       tilesUsedBox.appendChild(wrapper);
     });
@@ -395,6 +420,18 @@
 
     drawWithTiles(imageData, ctx, TARGET_WIDTH, TARGET_HEIGHT);
   }
+
+	function startHighlightTimer() {
+  clearInterval(highlightInterval); // reset existing timer if any
+
+  isHighlightVisible = true; // make sure it's visible initially
+  redrawCanvasOnly();
+
+  highlightInterval = setInterval(() => {
+    isHighlightVisible = !isHighlightVisible;
+    redrawCanvasOnly();
+  }, 700);
+}
 
   function redrawCanvasOnly() {
     if (!originalImage) return;
